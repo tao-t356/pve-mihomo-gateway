@@ -20,4 +20,4 @@
 }
 
 /ipv6 nd
-set [find where interface="${ROS_LAN_INTERFACE}"] ra-lifetime=none dns=""
+set [find where interface="${ROS_LAN_INTERFACE}"] ra-lifetime=${ROS_RA_LIFETIME} advertise-dns=no managed-address-configuration=no other-configuration=no dns=""

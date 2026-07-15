@@ -14,6 +14,7 @@ log "PVE Mihomo Gateway Wizard"
 prompt LAN_CIDR "LAN CIDR" "192.168.1.0/24"
 prompt ROS_IP "RouterOS IPv4" "192.168.1.2"
 prompt ROS_IPV6_LINK_LOCAL "RouterOS LAN link-local IPv6 (blank=auto detect, IPv6 optional)" ""
+prompt ENABLE_CLIENT_IPV6 "是否给手机/电脑启用国内 IPv6直连 (yes/no)" "yes"
 prompt PVE_BRIDGE "PVE LAN bridge" "vmbr0"
 prompt PVE_STORAGE "VM/LXC storage" "local-lvm"
 prompt PVE_FILE_STORAGE "Template/cloud image storage" "local"
@@ -45,6 +46,21 @@ prompt ROS_OPTION_SET_NAME "RouterOS DHCP option set" "set_mihomo"
 prompt OLD_GATEWAY_IP "Rollback gateway/DNS" "$ROS_IP"
 
 valid_ipv4 "$ROS_IP" && valid_ipv4 "$MIHOMO_IP" && valid_ipv4 "$AGH_IP" || die "IPv4 格式错误"
+case ${ENABLE_CLIENT_IPV6,,} in
+  yes|y)
+    ENABLE_CLIENT_IPV6=yes
+    ROS_RA_LIFETIME=30m
+    AGH_DISABLE_IPV6=false
+    MIHOMO_CN_FAKE_IP_FILTER='    - geosite:cn'
+    ;;
+  no|n)
+    ENABLE_CLIENT_IPV6=no
+    ROS_RA_LIFETIME=none
+    AGH_DISABLE_IPV6=true
+    MIHOMO_CN_FAKE_IP_FILTER='    # Client IPv6 disabled'
+    ;;
+  *) die "客户端 IPv6选项请输入 yes 或 no" ;;
+esac
 LAN_PREFIX=${LAN_CIDR#*/}
 [[ $LAN_PREFIX =~ ^[0-9]+$ && $LAN_PREFIX -ge 8 && $LAN_PREFIX -le 30 ]] || die "LAN CIDR前缀无效: $LAN_CIDR"
 qm status "$MIHOMO_VMID" >/dev/null 2>&1 && die "VMID $MIHOMO_VMID 已存在"
@@ -64,12 +80,14 @@ export MIHOMO_VMID MIHOMO_IP MIHOMO_DISK_GB MIHOMO_CORES MIHOMO_MEMORY_MB
 export AGH_CTID AGH_IP AGH_DISK_GB AGH_CORES AGH_MEMORY_MB
 export SUBSTORE_SUB_NAME MIHOMO_SECRET SUBSTORE_BACKEND_PATH AGH_ADMIN_PASSWORD
 export ROS_LAN_INTERFACE ROS_GATEWAY_OPTION_NAME ROS_DNS_OPTION_NAME ROS_OPTION_SET_NAME OLD_GATEWAY_IP
+export ENABLE_CLIENT_IPV6 ROS_RA_LIFETIME AGH_DISABLE_IPV6 MIHOMO_CN_FAKE_IP_FILTER
 export DOWNLOAD_PROFILE APT_MIRROR GITHUB_PROXY GITHUB_PROXY_ALT MIHOMO_VERSION ZASHBOARD_VERSION AGH_VERSION
 
 cat >"$RUNTIME_DIR/config.env" <<EOF
 LAN_CIDR=$LAN_CIDR
 ROS_IP=$ROS_IP
 ROS_IPV6_LINK_LOCAL=$ROS_IPV6_LINK_LOCAL
+ENABLE_CLIENT_IPV6=$ENABLE_CLIENT_IPV6
 PVE_BRIDGE=$PVE_BRIDGE
 PVE_STORAGE=$PVE_STORAGE
 PVE_FILE_STORAGE=$PVE_FILE_STORAGE
@@ -168,7 +186,7 @@ run pct create "$AGH_CTID" "$PVE_FILE_STORAGE:vztmpl/$TEMPLATE" --hostname adgua
 run pct start "$AGH_CTID"
 wait_for 60 "AdGuard LXC" pct exec "$AGH_CTID" -- true
 run pct push "$AGH_CTID" "$ROOT_DIR/scripts/provision-adguard.sh" /root/provision-adguard.sh
-run pct exec "$AGH_CTID" -- env AGH_ADMIN_PASSWORD="$AGH_ADMIN_PASSWORD" MIHOMO_IP="$MIHOMO_IP" \
+run pct exec "$AGH_CTID" -- env AGH_ADMIN_PASSWORD="$AGH_ADMIN_PASSWORD" MIHOMO_IP="$MIHOMO_IP" AGH_DISABLE_IPV6="$AGH_DISABLE_IPV6" \
   APT_MIRROR="$APT_MIRROR" GITHUB_PROXY="$GITHUB_PROXY" GITHUB_PROXY_ALT="$GITHUB_PROXY_ALT" \
   AGH_VERSION="$AGH_VERSION" bash /root/provision-adguard.sh
 

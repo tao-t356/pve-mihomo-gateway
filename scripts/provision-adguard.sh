@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 : "${AGH_ADMIN_PASSWORD:?}"
 : "${MIHOMO_IP:?}"
+: "${AGH_DISABLE_IPV6:=false}"
 : "${AGH_VERSION:=0.107.78}"
 : "${APT_MIRROR:=https://mirrors.ustc.edu.cn/debian}"
 : "${GITHUB_PROXY:=https://ghfast.top/}"
@@ -57,7 +58,7 @@ curl -fsS -X POST -H 'Content-Type: application/json' \
 
 sleep 5
 curl -fsS -u "admin:${AGH_ADMIN_PASSWORD}" -X POST -H 'Content-Type: application/json' \
-  -d "{\"upstream_dns\":[\"${MIHOMO_IP}:1053\"],\"upstream_dns_file\":\"\",\"bootstrap_dns\":[\"223.5.5.5\",\"119.29.29.29\"],\"fallback_dns\":[\"223.5.5.5\",\"119.29.29.29\"],\"protection_enabled\":true,\"ratelimit\":0,\"blocking_mode\":\"default\",\"edns_cs_enabled\":false,\"dnssec_enabled\":false,\"disable_ipv6\":true,\"upstream_mode\":\"\",\"cache_size\":16777216,\"cache_ttl_min\":0,\"cache_ttl_max\":0,\"cache_optimistic\":true,\"resolve_clients\":true,\"use_private_ptr_resolvers\":true}" \
+  -d "{\"upstream_dns\":[\"${MIHOMO_IP}:1053\"],\"upstream_dns_file\":\"\",\"bootstrap_dns\":[\"223.5.5.5\",\"119.29.29.29\"],\"fallback_dns\":[\"223.5.5.5\",\"119.29.29.29\"],\"protection_enabled\":true,\"ratelimit\":0,\"blocking_mode\":\"default\",\"edns_cs_enabled\":false,\"dnssec_enabled\":false,\"disable_ipv6\":${AGH_DISABLE_IPV6},\"upstream_mode\":\"\",\"cache_size\":16777216,\"cache_ttl_min\":0,\"cache_ttl_max\":0,\"cache_optimistic\":true,\"resolve_clients\":true,\"use_private_ptr_resolvers\":true}" \
   http://127.0.0.1:3000/control/dns_config
 
 curl --max-time 60 -fsS -u "admin:${AGH_ADMIN_PASSWORD}" -X POST -H 'Content-Type: application/json' \

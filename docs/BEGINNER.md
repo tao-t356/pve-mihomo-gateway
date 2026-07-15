@@ -94,14 +94,17 @@ apt-get install -y curl jq openssl gettext-base openssh-client dnsutils
 
 需要知道 LAN接口名称，例如 `LAN` 或 `bridge`。需要走代理的设备，建议提前设置为静态 DHCP租约。
 
-## IPv6不是必需条件
+## IPv6模式
 
 - 没有运营商 IPv6时，IPv4透明代理、AGH和所有面板仍能使用。
-- 有 IPv6时，向导会自动尝试发现 RouterOS链路本地地址。
-- 默认不让普通客户端使用 IPv6默认路由，避免绕过代理。
+- 有 IPv6-PD时，默认可让普通客户端获得公网 IPv6。
+- 国内域名返回真实 IPv4/IPv6并经 RouterOS直连；国外域名不返回 AAAA，继续使用 IPv4透明代理。
+- RouterOS会发布 IPv6默认路由，但不发布额外 DNS，客户端仍使用 AdGuard Home。
 - Mihomo自身可保留 IPv6，用于连接纯 IPv6节点。
 
-自动发现失败可以留空，不影响 IPv4功能。
+向导会自动尝试发现 RouterOS链路本地地址。自动发现失败或选择关闭客户端 IPv6都不影响 IPv4功能。
+
+使用客户端 IPv6时，不要给手机设置外部私人 DNS，也不要让浏览器使用绕过系统的安全 DNS，否则国外 AAAA记录可能绕过 Mihomo。
 
 ## 安装时会创建
 
@@ -127,4 +130,3 @@ apt-get install -y curl jq openssl gettext-base openssh-client dnsutils
 - 没有备份 RouterOS配置。
 - 公开订阅链接、PVE密码或面板密钥。
 - LVM-Thin空间耗尽导致 VM异常。
-

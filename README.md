@@ -17,7 +17,7 @@ RouterOS 主路由
 - 使用 Debian 13 Generic Cloud Image，新建 VM，不克隆或缩小已有磁盘。
 - Mihomo TUN、Fake-IP、国内外 DoH、常用业务分组和 EMBY 规则。
 - AdGuard Home 默认过滤器与 anti-AD，DNS 上游指向 Mihomo。
-- 客户端 IPv4、Mihomo 双栈；客户端不使用 IPv6 默认路由，Mihomo可连接纯 IPv6节点。
+- 可选客户端安全双栈：国内域名返回真实 IPv4/IPv6并直连，国外域名不返回 AAAA、继续经 IPv4透明代理。
 - 生成 RouterOS 7 应用和回滚脚本，不直接登录或修改主路由。
 - VMID、CTID 或 IP 冲突时停止，不覆盖已有资源。
 
@@ -78,6 +78,8 @@ DRY_RUN=1 ./install.sh
 订阅不会写入项目文件。向导部署完成后会暂停，提示管理员在 Sub-Store 中新增指定名称的订阅，再继续验收。
 
 生成的 RouterOS脚本会创建或更新 DHCP Option Set。需要代理的静态租约应绑定该 Option Set；未绑定的设备继续使用 RouterOS默认网关和 DNS。
+
+启用客户端 IPv6时，RouterOS必须已经获得运营商 IPv6-PD并向 LAN发布 `/64`前缀。客户端必须使用 AdGuard Home DNS；浏览器安全 DNS、Android私人 DNS或应用内 DoH可能绕过“国外不返回 AAAA”的防泄漏策略。
 
 ## 大陆网络下载策略
 
