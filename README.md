@@ -28,8 +28,24 @@ apt-get install -y curl jq openssl gettext-base openssh-client dnsutils
 
 ## 运行
 
+GitHub直连：
+
 ```bash
+git clone https://github.com/tao-t356/pve-mihomo-gateway.git
 cd pve-mihomo-gateway
+```
+
+大陆网络无代理下载：
+
+```bash
+curl -fL https://ghfast.top/https://github.com/tao-t356/pve-mihomo-gateway/archive/refs/heads/main.tar.gz \
+  | tar -xz
+cd pve-mihomo-gateway-main
+```
+
+开始安装：
+
+```bash
 chmod +x install.sh scripts/*.sh
 ./install.sh
 ```
