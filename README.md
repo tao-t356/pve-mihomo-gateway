@@ -4,6 +4,8 @@
 
 第一次使用请先阅读：[新手安装前准备清单](docs/BEGINNER.md)。
 
+录制或观看完整教程可参考：[小白理论＋实战视频文案](docs/VIDEO_SCRIPT.md)。
+
 ```text
 RouterOS 主路由
 ├── Debian Cloud VM：Mihomo + Zashboard + Sub-Store
