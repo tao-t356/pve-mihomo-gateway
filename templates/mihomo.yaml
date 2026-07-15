@@ -1,0 +1,105 @@
+mixed-port: 7890
+allow-lan: true
+bind-address: "*"
+mode: rule
+log-level: info
+ipv6: true
+external-controller: 0.0.0.0:9090
+secret: "${MIHOMO_SECRET}"
+external-ui: /etc/mihomo/ui
+unified-delay: true
+tcp-concurrent: true
+geo-auto-update: true
+geo-update-interval: 24
+
+tun:
+  enable: true
+  stack: mixed
+  device: mihomo
+  dns-hijack: [any:53, tcp://any:53]
+  auto-route: true
+  auto-redirect: true
+  auto-detect-interface: true
+  strict-route: true
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - localhost
+    - "+.anti-ad.net"
+    - "+.adguardteam.github.io"
+    - "+.github.io"
+    - "+.githubusercontent.com"
+  default-nameserver: [223.5.5.5, 119.29.29.29]
+  nameserver: [https://dns.alidns.com/dns-query, https://doh.pub/dns-query]
+  direct-nameserver: [https://dns.alidns.com/dns-query, https://doh.pub/dns-query]
+  proxy-server-nameserver: [https://dns.alidns.com/dns-query, https://doh.pub/dns-query]
+  nameserver-policy:
+    "geosite:cn,private": [https://dns.alidns.com/dns-query, https://doh.pub/dns-query]
+    "geosite:geolocation-!cn": [https://1.1.1.1/dns-query, https://8.8.8.8/dns-query]
+  respect-rules: true
+
+proxy-providers:
+  mmw:
+    type: http
+    url: "http://127.0.0.1:3001/${SUBSTORE_BACKEND_PATH}/download/${SUBSTORE_SUB_NAME}?target=ClashMeta"
+    path: ./providers/mmw.yaml
+    interval: 3600
+    health-check: {enable: true, url: https://www.gstatic.com/generate_204, interval: 300}
+
+proxy-groups:
+  # DIRECT is first so DNS and filter downloads work before a subscription is added.
+  - {name: PROXY, type: select, proxies: [DIRECT, AUTO, HK, JP, SG, US], use: [mmw]}
+  - {name: AUTO, type: url-test, use: [mmw], url: https://www.gstatic.com/generate_204, interval: 300, tolerance: 50}
+  - {name: HK, type: url-test, use: [mmw], filter: "(?i)香港|港|HK|Hong Kong", url: https://www.gstatic.com/generate_204, interval: 300}
+  - {name: JP, type: url-test, use: [mmw], filter: "(?i)日本|日|JP|Japan", url: https://www.gstatic.com/generate_204, interval: 300}
+  - {name: SG, type: url-test, use: [mmw], filter: "(?i)新加坡|狮城|SG|Singapore", url: https://www.gstatic.com/generate_204, interval: 300}
+  - {name: US, type: url-test, use: [mmw], filter: "(?i)美国|美|US|United States", url: https://www.gstatic.com/generate_204, interval: 300}
+  - {name: TIKTOK, type: select, proxies: [SG, JP, US, PROXY, DIRECT], use: [mmw]}
+  - {name: EMBY, type: select, proxies: [PROXY, AUTO, HK, SG, US, DIRECT], use: [mmw]}
+  - {name: AI, type: select, proxies: [US, SG, JP, PROXY], use: [mmw]}
+  - {name: YOUTUBE, type: select, proxies: [PROXY, HK, SG, JP, US], use: [mmw]}
+  - {name: TELEGRAM, type: select, proxies: [PROXY, SG, HK, US], use: [mmw]}
+  - {name: GOOGLE, type: select, proxies: [PROXY, SG, HK, US], use: [mmw]}
+  - {name: MICROSOFT, type: select, proxies: [DIRECT, PROXY], use: [mmw]}
+  - {name: APPLE, type: select, proxies: [DIRECT, PROXY], use: [mmw]}
+  - {name: AD-BLOCK, type: select, proxies: [REJECT, DIRECT]}
+  - {name: CHINA, type: select, proxies: [DIRECT, PROXY]}
+  - {name: FINAL, type: select, proxies: [PROXY, DIRECT]}
+
+rules:
+  - GEOSITE,private,DIRECT
+  - GEOIP,private,DIRECT,no-resolve
+  - GEOSITE,category-ads-all,AD-BLOCK
+  - DOMAIN-KEYWORD,lily,EMBY
+  - DOMAIN-KEYWORD,hohai,EMBY
+  - DOMAIN-KEYWORD,syemby,EMBY
+  - DOMAIN-KEYWORD,emos,EMBY
+  - DOMAIN-KEYWORD,111660,EMBY
+  - DOMAIN-KEYWORD,link01,EMBY
+  - DOMAIN-KEYWORD,cn2gias,EMBY
+  - DOMAIN-KEYWORD,lunarisvault,EMBY
+  - DOMAIN-SUFFIX,emby.media,EMBY
+  - DOMAIN-SUFFIX,emby.tv,EMBY
+  - DOMAIN-SUFFIX,mb3admin.com,EMBY
+  - GEOSITE,tiktok,TIKTOK
+  - GEOSITE,openai,AI
+  - GEOSITE,youtube,YOUTUBE
+  - GEOSITE,google,GOOGLE
+  - GEOSITE,telegram,TELEGRAM
+  - GEOIP,telegram,TELEGRAM,no-resolve
+  - GEOSITE,microsoft,MICROSOFT
+  - GEOSITE,apple,APPLE
+  - GEOSITE,cn,CHINA
+  - GEOIP,CN,CHINA,no-resolve
+  - MATCH,FINAL

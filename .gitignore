@@ -1,0 +1,7 @@
+config.env
+secrets.env
+state/
+*.log
+*.qcow2
+*.img
+
