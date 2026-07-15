@@ -13,7 +13,7 @@ chmod 700 "$RUNTIME_DIR"
 log "PVE Mihomo Gateway Wizard"
 prompt LAN_CIDR "LAN CIDR" "192.168.1.0/24"
 prompt ROS_IP "RouterOS IPv4" "192.168.1.2"
-prompt ROS_IPV6_LINK_LOCAL "RouterOS LAN link-local IPv6" "fe80::be24:11ff:fe91:6235"
+prompt ROS_IPV6_LINK_LOCAL "RouterOS LAN link-local IPv6 (blank=auto detect, IPv6 optional)" ""
 prompt PVE_BRIDGE "PVE LAN bridge" "vmbr0"
 prompt PVE_STORAGE "VM/LXC storage" "local-lvm"
 prompt PVE_FILE_STORAGE "Template/cloud image storage" "local"
@@ -39,12 +39,14 @@ prompt AGH_MEMORY_MB "AdGuard Home memory MiB" "512"
 
 prompt SUBSTORE_SUB_NAME "Sub-Store subscription name" "mmw"
 prompt ROS_LAN_INTERFACE "RouterOS LAN interface" "LAN"
-prompt ROS_GATEWAY_OPTION_NAME "Existing RouterOS gateway DHCP option" "gw_to_100"
-prompt ROS_DNS_OPTION_NAME "Existing RouterOS DNS DHCP option" "dns_to_100"
-prompt ROS_OPTION_SET_NAME "RouterOS DHCP option set" "set_gw_100"
-prompt OLD_GATEWAY_IP "Rollback gateway/DNS" "192.168.1.100"
+prompt ROS_GATEWAY_OPTION_NAME "RouterOS gateway DHCP option" "gw_to_mihomo"
+prompt ROS_DNS_OPTION_NAME "RouterOS DNS DHCP option" "dns_to_adguard"
+prompt ROS_OPTION_SET_NAME "RouterOS DHCP option set" "set_mihomo"
+prompt OLD_GATEWAY_IP "Rollback gateway/DNS" "$ROS_IP"
 
 valid_ipv4 "$ROS_IP" && valid_ipv4 "$MIHOMO_IP" && valid_ipv4 "$AGH_IP" || die "IPv4 格式错误"
+LAN_PREFIX=${LAN_CIDR#*/}
+[[ $LAN_PREFIX =~ ^[0-9]+$ && $LAN_PREFIX -ge 8 && $LAN_PREFIX -le 30 ]] || die "LAN CIDR前缀无效: $LAN_CIDR"
 qm status "$MIHOMO_VMID" >/dev/null 2>&1 && die "VMID $MIHOMO_VMID 已存在"
 pct status "$AGH_CTID" >/dev/null 2>&1 && die "CTID $AGH_CTID 已存在"
 pvesm status | awk '{print $1}' | grep -qx "$PVE_STORAGE" || die "存储不存在: $PVE_STORAGE"
@@ -134,11 +136,21 @@ run qm set "$MIHOMO_VMID" --scsi0 "$IMPORTED_VOL,discard=on,iothread=1" --boot o
 run qm resize "$MIHOMO_VMID" scsi0 "${MIHOMO_DISK_GB}G"
 run qm set "$MIHOMO_VMID" --ide2 "$PVE_STORAGE:cloudinit" \
   --ciuser "$CLOUD_USER" --cipassword "$CLOUD_PASSWORD" \
-  --sshkeys "$SSH_KEY_FILE.pub" --ipconfig0 "ip=$MIHOMO_IP/24,gw=$ROS_IP" \
+  --sshkeys "$SSH_KEY_FILE.pub" --ipconfig0 "ip=$MIHOMO_IP/$LAN_PREFIX,gw=$ROS_IP" \
   --nameserver 223.5.5.5
 run qm start "$MIHOMO_VMID"
 
 wait_for 180 "Mihomo VM SSH" ssh -o StrictHostKeyChecking=no -o BatchMode=yes -i "$SSH_KEY_FILE" "$CLOUD_USER@$MIHOMO_IP" true
+if [[ -z $ROS_IPV6_LINK_LOCAL ]]; then
+  ROS_IPV6_LINK_LOCAL=$(ssh -o StrictHostKeyChecking=no -i "$SSH_KEY_FILE" "$CLOUD_USER@$MIHOMO_IP" \
+    "ip -6 route show default | awk '/proto ra/ {print \$3; exit}'" 2>/dev/null || true)
+  if [[ -n $ROS_IPV6_LINK_LOCAL ]]; then
+    log "自动发现 RouterOS IPv6 link-local: $ROS_IPV6_LINK_LOCAL"
+    printf 'ROS_IPV6_LINK_LOCAL=%s\n' "$ROS_IPV6_LINK_LOCAL" >>"$RUNTIME_DIR/config.env"
+  else
+    warn "未发现 RouterOS IPv6默认路由；跳过 Mihomo专用IPv6静态路由"
+  fi
+fi
 MIHOMO_CONFIG=$(render_template "$ROOT_DIR/templates/mihomo.yaml" /dev/stdout)
 MIHOMO_CONFIG_B64=$(printf '%s' "$MIHOMO_CONFIG" | base64 -w0)
 export MIHOMO_CONFIG_B64
@@ -151,7 +163,7 @@ TEMPLATE=$(pveam available --section system | awk '/debian-13-standard/ {print $
 pveam list "$PVE_FILE_STORAGE" | grep -q "$TEMPLATE" || run pveam download "$PVE_FILE_STORAGE" "$TEMPLATE"
 run pct create "$AGH_CTID" "$PVE_FILE_STORAGE:vztmpl/$TEMPLATE" --hostname adguard-home \
   --cores "$AGH_CORES" --memory "$AGH_MEMORY_MB" --swap 256 --rootfs "$PVE_STORAGE:$AGH_DISK_GB" \
-  --net0 "name=eth0,bridge=$PVE_BRIDGE,ip=$AGH_IP/24,gw=$ROS_IP,type=veth" \
+  --net0 "name=eth0,bridge=$PVE_BRIDGE,ip=$AGH_IP/$LAN_PREFIX,gw=$ROS_IP,type=veth" \
   --unprivileged 1 --onboot 1 --nameserver 223.5.5.5 --searchdomain lan
 run pct start "$AGH_CTID"
 wait_for 60 "AdGuard LXC" pct exec "$AGH_CTID" -- true

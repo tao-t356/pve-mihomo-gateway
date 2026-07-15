@@ -2,6 +2,8 @@
 
 从一台已安装好的 Proxmox VE 开始，交互式部署 RouterOS 配套的家庭透明网关：
 
+第一次使用请先阅读：[新手安装前准备清单](docs/BEGINNER.md)。
+
 ```text
 RouterOS 主路由
 ├── Debian Cloud VM：Mihomo + Zashboard + Sub-Store
@@ -18,6 +20,8 @@ RouterOS 主路由
 - 客户端 IPv4、Mihomo 双栈；客户端不使用 IPv6 默认路由，Mihomo可连接纯 IPv6节点。
 - 生成 RouterOS 7 应用和回滚脚本，不直接登录或修改主路由。
 - VMID、CTID 或 IP 冲突时停止，不覆盖已有资源。
+
+当前版本要求 RouterOS CHR已经安装并能正常作为主路由工作，不负责自动配置 PPPoE、WAN/LAN物理口或宽带账号。
 
 ## PVE依赖
 

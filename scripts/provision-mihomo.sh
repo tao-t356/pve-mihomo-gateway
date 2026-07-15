@@ -5,7 +5,7 @@ set -Eeuo pipefail
 : "${MIHOMO_SECRET:?}"
 : "${SUBSTORE_BACKEND_PATH:?}"
 : "${MIHOMO_IP:?}"
-: "${ROS_IPV6_LINK_LOCAL:?}"
+: "${ROS_IPV6_LINK_LOCAL:=}"
 : "${MIHOMO_VERSION:=1.19.28}"
 : "${ZASHBOARD_VERSION:=3.15.0}"
 : "${APT_MIRROR:=https://mirrors.ustc.edu.cn/debian}"
@@ -56,8 +56,8 @@ printf '%s' "$MIHOMO_CONFIG_B64" | base64 -d > /etc/mihomo/config.yaml
 cat > /etc/systemd/system/mihomo.service <<'EOF'
 [Unit]
 Description=Mihomo Proxy Core
-After=network-online.target docker.service mihomo-ipv6-route.service
-Wants=network-online.target mihomo-ipv6-route.service
+After=network-online.target docker.service
+Wants=network-online.target
 
 [Service]
 Type=simple
@@ -82,6 +82,7 @@ net.ipv6.conf.all.disable_ipv6=0
 EOF
 sysctl --system >/dev/null
 
+if [[ -n $ROS_IPV6_LINK_LOCAL ]]; then
 cat > /etc/systemd/system/mihomo-ipv6-route.service <<EOF
 [Unit]
 Description=Persistent IPv6 default route for Mihomo host
@@ -97,10 +98,12 @@ RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
 EOF
+fi
 
 /usr/local/bin/mihomo -t -d /etc/mihomo
 systemctl daemon-reload
-systemctl enable --now mihomo-ipv6-route.service mihomo
+if [[ -n $ROS_IPV6_LINK_LOCAL ]]; then systemctl enable --now mihomo-ipv6-route.service; fi
+systemctl enable --now mihomo
 
 SUBSTORE_IMAGE=''
 for image in \
