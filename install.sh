@@ -51,13 +51,13 @@ case ${ENABLE_CLIENT_IPV6,,} in
     ENABLE_CLIENT_IPV6=yes
     ROS_RA_LIFETIME=30m
     AGH_DISABLE_IPV6=false
-    MIHOMO_CN_FAKE_IP_FILTER='    - geosite:cn'
+    MIHOMO_CN_FAKE_IP_FILTER='geosite:cn'
     ;;
   no|n)
     ENABLE_CLIENT_IPV6=no
     ROS_RA_LIFETIME=none
     AGH_DISABLE_IPV6=true
-    MIHOMO_CN_FAKE_IP_FILTER='    # Client IPv6 disabled'
+    MIHOMO_CN_FAKE_IP_FILTER='__client_ipv6_disabled.invalid'
     ;;
   *) die "客户端 IPv6选项请输入 yes 或 no" ;;
 esac
