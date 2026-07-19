@@ -59,28 +59,44 @@ proxy-providers:
     health-check: {enable: true, url: https://www.gstatic.com/generate_204, interval: 300}
 
 proxy-groups:
-  # DIRECT is first so DNS and filter downloads work before a subscription is added.
-  - {name: PROXY, type: select, proxies: [DIRECT, AUTO, HK, JP, SG, US], use: [mmw]}
-  - {name: AUTO, type: url-test, use: [mmw], url: https://www.gstatic.com/generate_204, interval: 300, tolerance: 50}
-  - {name: HK, type: url-test, use: [mmw], filter: "(?i)香港|港|HK|Hong Kong", url: https://www.gstatic.com/generate_204, interval: 300}
-  - {name: JP, type: url-test, use: [mmw], filter: "(?i)日本|日|JP|Japan", url: https://www.gstatic.com/generate_204, interval: 300}
-  - {name: SG, type: url-test, use: [mmw], filter: "(?i)新加坡|狮城|SG|Singapore", url: https://www.gstatic.com/generate_204, interval: 300}
-  - {name: US, type: url-test, use: [mmw], filter: "(?i)美国|美|US|United States", url: https://www.gstatic.com/generate_204, interval: 300}
-  - {name: TIKTOK, type: select, proxies: [SG, JP, US, PROXY, DIRECT], use: [mmw]}
-  - {name: EMBY, type: select, proxies: [PROXY, AUTO, HK, SG, US, DIRECT], use: [mmw]}
-  - {name: AI, type: select, proxies: [US, SG, JP, PROXY], use: [mmw]}
-  - {name: YOUTUBE, type: select, proxies: [PROXY, HK, SG, JP, US], use: [mmw]}
-  - {name: TELEGRAM, type: select, proxies: [PROXY, SG, HK, US], use: [mmw]}
-  - {name: GOOGLE, type: select, proxies: [PROXY, SG, HK, US], use: [mmw]}
-  - {name: MICROSOFT, type: select, proxies: [DIRECT, PROXY], use: [mmw]}
-  - {name: APPLE, type: select, proxies: [DIRECT, PROXY], use: [mmw]}
+  - {name: "🚀 节点选择", type: select, proxies: ["♻️ 自动选择", DIRECT, REJECT], use: [mmw]}
+  - {name: "♻️ 自动选择", type: url-test, use: [mmw], url: https://www.gstatic.com/generate_204, interval: 300, tolerance: 50, lazy: false}
+  - {name: "🤖 AI 服务", type: select, proxies: ["🚀 节点选择", "♻️ 自动选择", DIRECT, REJECT], use: [mmw]}
+  - {name: "📹 油管视频", type: select, proxies: ["🚀 节点选择", "♻️ 自动选择", DIRECT, REJECT], use: [mmw]}
+  - {name: "🔍 谷歌服务", type: select, proxies: ["🚀 节点选择", "♻️ 自动选择", DIRECT, REJECT], use: [mmw]}
+  - {name: "🏠 私有网络", type: select, proxies: [DIRECT, "🚀 节点选择", REJECT], use: [mmw]}
+  - {name: "🔒 国内服务", type: select, proxies: [DIRECT, "🚀 节点选择"], use: [mmw]}
+  - {name: "📲 电报消息", type: select, proxies: ["🚀 节点选择", "♻️ 自动选择", DIRECT, REJECT], use: [mmw]}
+  - {name: "🐱 GitHub", type: select, proxies: ["🚀 节点选择", "♻️ 自动选择", DIRECT, REJECT], use: [mmw]}
+  - {name: "Ⓜ️ 微软服务", type: select, proxies: [DIRECT, "🚀 节点选择", "♻️ 自动选择", REJECT], use: [mmw]}
+  - {name: "🍏 苹果服务", type: select, proxies: [DIRECT, "🚀 节点选择", "♻️ 自动选择", REJECT], use: [mmw]}
+  - {name: "🌍 非中国", type: select, proxies: ["🚀 节点选择", "♻️ 自动选择", DIRECT, REJECT], use: [mmw]}
+  - {name: "🐟 漏网之鱼", type: select, proxies: ["🚀 节点选择", "♻️ 自动选择", DIRECT, REJECT], use: [mmw]}
+  - {name: TIKTOK, type: select, proxies: ["🚀 节点选择", "♻️ 自动选择", DIRECT, REJECT], use: [mmw]}
+  - {name: EMBY, type: select, proxies: ["🚀 节点选择", "♻️ 自动选择", DIRECT, REJECT], use: [mmw]}
   - {name: AD-BLOCK, type: select, proxies: [REJECT, DIRECT]}
-  - {name: CHINA, type: select, proxies: [DIRECT, PROXY]}
-  - {name: FINAL, type: select, proxies: [PROXY, DIRECT]}
+
+rule-providers:
+  apple: {type: http, behavior: domain, format: mrs, interval: 86400, path: ./ruleset/apple.mrs, url: "https://ghfast.top/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/apple.mrs"}
+  category-ai-!cn: {type: http, behavior: domain, format: mrs, interval: 86400, path: ./ruleset/category-ai-!cn.mrs, url: "https://ghfast.top/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-!cn.mrs"}
+  cn: {type: http, behavior: ipcidr, format: mrs, interval: 86400, path: ./ruleset/cn.mrs, url: "https://ghfast.top/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/cn.mrs"}
+  cn-domains: {type: http, behavior: domain, format: mrs, interval: 86400, path: ./ruleset/cn-domains.mrs, url: "https://ghfast.top/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/cn.mrs"}
+  geolocation-!cn: {type: http, behavior: domain, format: mrs, interval: 86400, path: ./ruleset/geolocation-!cn.mrs, url: "https://ghfast.top/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-!cn.mrs"}
+  geolocation-cn: {type: http, behavior: domain, format: mrs, interval: 86400, path: ./ruleset/geolocation-cn.mrs, url: "https://ghfast.top/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-cn.mrs"}
+  github: {type: http, behavior: domain, format: mrs, interval: 86400, path: ./ruleset/github.mrs, url: "https://ghfast.top/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/github.mrs"}
+  gitlab: {type: http, behavior: domain, format: mrs, interval: 86400, path: ./ruleset/gitlab.mrs, url: "https://ghfast.top/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/gitlab.mrs"}
+  google: {type: http, behavior: domain, format: mrs, interval: 86400, path: ./ruleset/google.mrs, url: "https://ghfast.top/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/google.mrs"}
+  google-ip: {type: http, behavior: ipcidr, format: mrs, interval: 86400, path: ./ruleset/google-ip.mrs, url: "https://ghfast.top/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/google.mrs"}
+  microsoft: {type: http, behavior: domain, format: mrs, interval: 86400, path: ./ruleset/microsoft.mrs, url: "https://ghfast.top/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/microsoft.mrs"}
+  openai: {type: http, behavior: domain, format: mrs, interval: 86400, path: ./ruleset/openai.mrs, url: "https://ghfast.top/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/openai.mrs"}
+  private: {type: http, behavior: ipcidr, format: mrs, interval: 86400, path: ./ruleset/private.mrs, url: "https://ghfast.top/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/private.mrs"}
+  telegram: {type: http, behavior: domain, format: mrs, interval: 86400, path: ./ruleset/telegram.mrs, url: "https://ghfast.top/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/telegram.mrs"}
+  telegram-ip: {type: http, behavior: ipcidr, format: mrs, interval: 86400, path: ./ruleset/telegram-ip.mrs, url: "https://ghfast.top/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/telegram.mrs"}
+  youtube: {type: http, behavior: domain, format: mrs, interval: 86400, path: ./ruleset/youtube.mrs, url: "https://ghfast.top/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/youtube.mrs"}
 
 rules:
-  - GEOSITE,private,DIRECT
-  - GEOIP,private,DIRECT,no-resolve
+  - GEOSITE,private,🏠 私有网络
+  - GEOIP,private,🏠 私有网络,no-resolve
   - GEOSITE,category-ads-all,AD-BLOCK
   - DOMAIN-KEYWORD,lily,EMBY
   - DOMAIN-KEYWORD,hohai,EMBY
@@ -93,14 +109,27 @@ rules:
   - DOMAIN-SUFFIX,emby.media,EMBY
   - DOMAIN-SUFFIX,emby.tv,EMBY
   - DOMAIN-SUFFIX,mb3admin.com,EMBY
-  - GEOSITE,tiktok,TIKTOK
-  - GEOSITE,openai,AI
-  - GEOSITE,youtube,YOUTUBE
-  - GEOSITE,google,GOOGLE
-  - GEOSITE,telegram,TELEGRAM
-  - GEOIP,telegram,TELEGRAM,no-resolve
-  - GEOSITE,microsoft,MICROSOFT
-  - GEOSITE,apple,APPLE
-  - GEOSITE,cn,CHINA
-  - GEOIP,CN,CHINA,no-resolve
-  - MATCH,FINAL
+  - DOMAIN-KEYWORD,tiktok,TIKTOK
+  - DOMAIN-KEYWORD,tiktokcdn,TIKTOK
+  - DOMAIN-KEYWORD,byteoversea,TIKTOK
+  - DOMAIN-KEYWORD,bytedance,TIKTOK
+  - DOMAIN-KEYWORD,muscdn,TIKTOK
+  - DOMAIN-KEYWORD,snssdk,TIKTOK
+  - DOMAIN-KEYWORD,tiktokv,TIKTOK
+  - RULE-SET,category-ai-!cn,🤖 AI 服务
+  - RULE-SET,openai,🤖 AI 服务
+  - RULE-SET,youtube,📹 油管视频
+  - RULE-SET,google,🔍 谷歌服务
+  - RULE-SET,geolocation-cn,🔒 国内服务
+  - RULE-SET,cn-domains,🔒 国内服务
+  - RULE-SET,telegram,📲 电报消息
+  - RULE-SET,github,🐱 GitHub
+  - RULE-SET,gitlab,🐱 GitHub
+  - RULE-SET,microsoft,Ⓜ️ 微软服务
+  - RULE-SET,apple,🍏 苹果服务
+  - RULE-SET,geolocation-!cn,🌍 非中国
+  - RULE-SET,google-ip,🔍 谷歌服务,no-resolve
+  - RULE-SET,private,🏠 私有网络,no-resolve
+  - RULE-SET,cn,🔒 国内服务,no-resolve
+  - RULE-SET,telegram-ip,📲 电报消息,no-resolve
+  - MATCH,🐟 漏网之鱼
