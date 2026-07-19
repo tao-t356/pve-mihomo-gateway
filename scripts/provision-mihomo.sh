@@ -6,6 +6,7 @@ set -Eeuo pipefail
 : "${SUBSTORE_BACKEND_PATH:?}"
 : "${MIHOMO_IP:?}"
 : "${ROS_IPV6_LINK_LOCAL:=}"
+: "${WAN_INTERFACE:=}"
 : "${MIHOMO_VERSION:=1.19.28}"
 : "${ZASHBOARD_VERSION:=3.15.0}"
 : "${APT_MIRROR:=https://mirrors.ustc.edu.cn/debian}"
@@ -37,6 +38,14 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y ca-certificates curl jq unzip docker.io nftables qemu-guest-agent dnsutils
 systemctl enable --now docker qemu-guest-agent
+
+if [[ -z $WAN_INTERFACE ]]; then
+  WAN_INTERFACE=$(ip -4 route show default | awk '{print $5; exit}')
+fi
+[[ -n $WAN_INTERFACE && -e /sys/class/net/$WAN_INTERFACE ]] || {
+  echo "cannot detect WAN interface: $WAN_INTERFACE" >&2
+  exit 1
+}
 
 install -d -m 755 /etc/mihomo/ui /opt/sub-store
 
@@ -77,7 +86,7 @@ cat > /etc/sysctl.d/99-mihomo-router.conf <<'EOF'
 net.ipv4.ip_forward=1
 net.ipv6.conf.all.forwarding=1
 net.ipv6.conf.default.forwarding=1
-net.ipv6.conf.ens18.accept_ra=2
+net.ipv6.conf.${WAN_INTERFACE}.accept_ra=2
 net.ipv6.conf.all.disable_ipv6=0
 EOF
 sysctl --system >/dev/null
@@ -91,8 +100,8 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/sbin/ip -6 route replace default via ${ROS_IPV6_LINK_LOCAL} dev ens18 metric 100
-ExecStop=-/usr/sbin/ip -6 route del default via ${ROS_IPV6_LINK_LOCAL} dev ens18 metric 100
+ExecStart=/usr/sbin/ip -6 route replace default via ${ROS_IPV6_LINK_LOCAL} dev ${WAN_INTERFACE} metric 100
+ExecStop=-/usr/sbin/ip -6 route del default via ${ROS_IPV6_LINK_LOCAL} dev ${WAN_INTERFACE} metric 100
 RemainAfterExit=yes
 
 [Install]
