@@ -82,6 +82,32 @@ NoNewPrivileges=true
 WantedBy=multi-user.target
 EOF
 
+cat > /etc/mihomo/dns-hijack.nft <<EOF
+table inet mihomo_dns_hijack {
+  chain prerouting {
+    type nat hook prerouting priority -110; policy accept;
+    iifname "${WAN_INTERFACE}" meta l4proto { tcp, udp } th dport 53 redirect to :1053
+  }
+}
+EOF
+
+cat > /etc/systemd/system/mihomo-dns-hijack.service <<'EOF'
+[Unit]
+Description=Redirect LAN DNS to Mihomo
+After=network-online.target mihomo.service
+Wants=network-online.target mihomo.service
+
+[Service]
+Type=oneshot
+ExecStartPre=-/usr/sbin/nft delete table inet mihomo_dns_hijack
+ExecStart=/usr/sbin/nft -f /etc/mihomo/dns-hijack.nft
+ExecStop=-/usr/sbin/nft delete table inet mihomo_dns_hijack
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
 cat > /etc/sysctl.d/99-mihomo-router.conf <<'EOF'
 net.ipv4.ip_forward=1
 net.ipv6.conf.all.forwarding=1
@@ -113,6 +139,7 @@ fi
 systemctl daemon-reload
 if [[ -n $ROS_IPV6_LINK_LOCAL ]]; then systemctl enable --now mihomo-ipv6-route.service; fi
 systemctl enable --now mihomo
+systemctl enable --now mihomo-dns-hijack.service
 
 SUBSTORE_IMAGE=''
 for image in \
