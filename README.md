@@ -77,6 +77,19 @@ DRY_RUN=1 ./install.sh
 - Sub-Store：`http://MIHOMO_IP:3001/`
 - AdGuard Home：`http://AGH_IP:3000/`
 
+Mihomo Debian VM 默认 SSH 登录：
+
+- 地址：`MIHOMO_IP`，默认 `192.168.1.10`
+- 用户名：`root` 或 `admin`
+- 密码：安装时的 `Mihomo VM password`，默认 `facker668`
+
+自定义 Mihomo 分流规则请写到 `templates/mihomo.extra-rules.yaml`，不要改主模板里的通用规则。安装器会把这个文件的内容插入到 `MATCH` 规则前面，例如：
+
+```yaml
+- DOMAIN-SUFFIX,fastboostcdn.com,EMBY
+- DOMAIN-KEYWORD,myemby,EMBY
+```
+
 订阅不会写入项目文件。向导部署完成后会暂停，提示管理员在 Sub-Store 中新增指定名称的订阅，再继续验收。
 
 生成的 RouterOS脚本会创建或更新 DHCP Option Set。需要代理的静态租约应绑定该 Option Set；未绑定的设备继续使用 RouterOS默认网关和 DNS。

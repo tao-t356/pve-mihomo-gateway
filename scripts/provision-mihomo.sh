@@ -5,6 +5,7 @@ set -Eeuo pipefail
 : "${MIHOMO_SECRET:?}"
 : "${SUBSTORE_BACKEND_PATH:?}"
 : "${MIHOMO_IP:?}"
+: "${MIHOMO_VM_PASSWORD:=}"
 : "${ROS_IPV6_LINK_LOCAL:=}"
 : "${WAN_INTERFACE:=}"
 : "${MIHOMO_VERSION:=1.19.28}"
@@ -38,6 +39,22 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y ca-certificates curl jq unzip docker.io nftables qemu-guest-agent dnsutils
 systemctl enable --now docker qemu-guest-agent
+
+if [[ -n $MIHOMO_VM_PASSWORD ]]; then
+  printf 'admin:%s\n' "$MIHOMO_VM_PASSWORD" | chpasswd
+  printf 'root:%s\n' "$MIHOMO_VM_PASSWORD" | chpasswd
+fi
+if grep -qE '^[#[:space:]]*PermitRootLogin[[:space:]]+' /etc/ssh/sshd_config; then
+  sed -i -E 's/^[#[:space:]]*PermitRootLogin[[:space:]]+.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+else
+  printf '\nPermitRootLogin yes\n' >> /etc/ssh/sshd_config
+fi
+if grep -qE '^[#[:space:]]*PasswordAuthentication[[:space:]]+' /etc/ssh/sshd_config; then
+  sed -i -E 's/^[#[:space:]]*PasswordAuthentication[[:space:]]+.*/PasswordAuthentication yes/' /etc/ssh/sshd_config
+else
+  printf '\nPasswordAuthentication yes\n' >> /etc/ssh/sshd_config
+fi
+systemctl reload ssh || systemctl restart ssh || true
 
 if [[ -z $WAN_INTERFACE ]]; then
   WAN_INTERFACE=$(ip -4 route show default | awk '{print $5; exit}')
